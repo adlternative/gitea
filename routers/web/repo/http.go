@@ -583,6 +583,7 @@ func GetTextFile(p string) func(*context.Context) {
 }
 
 // GetInfoPacks implements Git dumb HTTP
+// 查看仓库中 objects/info/packs 文件
 func GetInfoPacks(ctx *context.Context) {
 	h := httpBase(ctx)
 	if h != nil {

@@ -354,6 +354,7 @@ func RedirectToRepo(ctx *Context, redirectRepoID int64) {
 	ctx.Redirect(path.Join(setting.AppSubURL, redirectPath), http.StatusTemporaryRedirect)
 }
 
+// 检查用户权限和仓库是否为 MIRROR
 func repoAssignment(ctx *Context, repo *repo_model.Repository) {
 	var err error
 	if err = repo.LoadOwner(ctx); err != nil {
@@ -420,12 +421,13 @@ func RepoIDAssignment() func(ctx *Context) {
 			}
 			return
 		}
-
+		// 检查用户权限和仓库是否为 MIRROR
 		repoAssignment(ctx, repo)
 	}
 }
 
 // RepoAssignment returns a middleware to handle repository assignment
+// 检查用户权限和仓库是否为 MIRROR，设置一堆仓库属性例如 Repo.GitRepo 获取所有的分支，标签
 func RepoAssignment(ctx *Context) (cancel context.CancelFunc) {
 	if _, repoAssignmentOnce := ctx.Data["repoAssignmentExecuted"]; repoAssignmentOnce {
 		log.Trace("RepoAssignment was exec already, skipping second call ...")
@@ -520,6 +522,7 @@ func RepoAssignment(ctx *Context) (cancel context.CancelFunc) {
 	}
 	repo.Owner = owner
 
+	// 检查用户权限和仓库是否为 MIRROR
 	repoAssignment(ctx, repo)
 	if ctx.Written() {
 		return
@@ -793,6 +796,7 @@ func (rt RepoRefType) RefTypeIncludesTags() bool {
 	return false
 }
 
+// 从 URL 例如 master/Documentation 中找出 refname=master，Repo.TreePath=Documentation
 func getRefNameFromPath(ctx *Context, path string, isExist func(string) bool) string {
 	refName := ""
 	parts := strings.Split(path, "/")
@@ -806,6 +810,7 @@ func getRefNameFromPath(ctx *Context, path string, isExist func(string) bool) st
 	return ""
 }
 
+// 从 URL 中找出 refname
 func getRefName(ctx *Context, pathType RepoRefType) string {
 	path := ctx.Params("*")
 	switch pathType {
@@ -872,6 +877,7 @@ func getRefName(ctx *Context, pathType RepoRefType) string {
 
 // RepoRefByType handles repository reference name for a specific type
 // of repository reference
+// 初始化仓库信息和分支信息
 func RepoRefByType(refType RepoRefType, ignoreNotExistErr ...bool) func(*Context) context.CancelFunc {
 	return func(ctx *Context) (cancel context.CancelFunc) {
 		// Empty repository does not have reference information.

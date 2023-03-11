@@ -92,6 +92,7 @@ func parseTreeEntries(data []byte, ptree *Tree) ([]*TreeEntry, error) {
 	return entries, nil
 }
 
+// rd 读出的 每行 TREE 内容解析到多行 tree entry
 func catBatchParseTreeEntries(ptree *Tree, rd *bufio.Reader, sz int64) ([]*TreeEntry, error) {
 	fnameBuf := make([]byte, 4096)
 	modeBuf := make([]byte, 40)

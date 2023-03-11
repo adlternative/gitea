@@ -190,6 +190,7 @@ func SearchIssues(ctx *context.APIContext) {
 		keyword = ""
 	}
 	var issueIDs []int64
+	// 关键字搜索
 	if len(keyword) > 0 && len(repoIDs) > 0 {
 		if issueIDs, err = issue_indexer.SearchIssuesByKeyword(ctx, repoIDs, keyword); err != nil {
 			ctx.Error(http.StatusInternalServerError, "SearchIssuesByKeyword", err)

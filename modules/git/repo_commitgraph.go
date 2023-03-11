@@ -10,6 +10,7 @@ import (
 
 // WriteCommitGraph write commit graph to speed up repo access
 // this requires git v2.18 to be installed
+// 写提交图
 func WriteCommitGraph(ctx context.Context, repoPath string) error {
 	if CheckGitVersionAtLeast("2.18") == nil {
 		if _, _, err := NewCommand(ctx, "commit-graph", "write").RunStdString(&RunOpts{Dir: repoPath}); err != nil {

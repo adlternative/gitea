@@ -16,6 +16,7 @@ import (
 )
 
 // GetCommitsInfo gets information of all commits that are corresponding to these entries
+// 获得所有的 TREE ENTRY 的 最新 commit 数据
 func (tes Entries) GetCommitsInfo(ctx context.Context, commit *Commit, treePath string) ([]CommitInfo, *Commit, error) {
 	entryPaths := make([]string, len(tes)+1)
 	// Get the commit for the treePath itself

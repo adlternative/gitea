@@ -1052,6 +1052,7 @@ func NewIssue(repo *repo_model.Repository, issue *Issue, labelIDs []int64, uuids
 	}
 	defer committer.Close()
 
+	// 更新并获取仓库的最大 ISSUE 号码
 	idx, err := db.GetNextResourceIndex(ctx, "issue_index", repo.ID)
 	if err != nil {
 		return fmt.Errorf("generate issue index failed: %w", err)
@@ -1514,6 +1515,7 @@ func Issues(ctx context.Context, opts *IssuesOptions) ([]*Issue, error) {
 		Join("INNER", "repository", "`issue`.repo_id = `repository`.id")
 	opts.setupSessionWithLimit(sess)
 
+	// 排序
 	sortIssuesSession(sess, opts.SortType, opts.PriorityRepoID)
 
 	issues := make([]*Issue, 0, opts.ListOptions.PageSize)
@@ -1521,6 +1523,7 @@ func Issues(ctx context.Context, opts *IssuesOptions) ([]*Issue, error) {
 		return nil, fmt.Errorf("unable to query Issues: %w", err)
 	}
 
+	// 加载一些属性 例如 ISSUE 的标签，仓库...
 	if err := IssueList(issues).LoadAttributes(); err != nil {
 		return nil, fmt.Errorf("unable to LoadAttributes for Issues: %w", err)
 	}
@@ -1651,6 +1654,7 @@ func GetIssueStats(opts *IssueStatsOptions) (*IssueStats, error) {
 	return accum, nil
 }
 
+// 计算出 []issueIDs 打开和关闭的 ISSUE 数量
 func getIssueStatsChunk(opts *IssueStatsOptions, issueIDs []int64) (*IssueStats, error) {
 	stats := &IssueStats{}
 
@@ -1906,13 +1910,16 @@ func GetRepoIssueStats(repoID, uid int64, filterMode int, isPull bool) (numOpen,
 // SearchIssueIDsByKeyword search issues on database
 func SearchIssueIDsByKeyword(ctx context.Context, kw string, repoIDs []int64, limit, start int) (int64, []int64, error) {
 	repoCond := builder.In("repo_id", repoIDs)
+	// 找出所有 REPO ID 在限制范围内的 issue id
 	subQuery := builder.Select("id").From("issue").Where(repoCond)
+
 	cond := builder.And(
 		repoCond,
 		builder.Or(
 			db.BuildCaseInsensitiveLike("name", kw),
 			db.BuildCaseInsensitiveLike("content", kw),
 			builder.In("id", builder.Select("issue_id").
+				// 找出所有 类型是 comment ISSUE_id 在限制范围，内容类似于 KW 的 comment
 				From("comment").
 				Where(builder.And(
 					builder.Eq{"type": CommentTypeComment},

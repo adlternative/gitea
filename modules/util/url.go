@@ -10,6 +10,7 @@ import (
 )
 
 // PathEscapeSegments escapes segments of a path while not escaping forward slash
+// 将 / 之外的所有的 url 特殊字符转译
 func PathEscapeSegments(path string) string {
 	slice := strings.Split(path, "/")
 	for index := range slice {

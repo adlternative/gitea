@@ -157,6 +157,7 @@ func findReadmeFileInEntries(ctx *context.Context, entries []*git.TreeEntry) (*n
 }
 
 func renderDirectory(ctx *context.Context, treeLink string) {
+	// 首先渲染所有的目录项目
 	entries := renderDirectoryFiles(ctx, 1*time.Second)
 	if ctx.Written() {
 		return
@@ -186,6 +187,7 @@ func renderDirectory(ctx *context.Context, treeLink string) {
 		return
 	}
 
+	// 目录下如果有 readme 则进行渲染
 	renderReadmeFile(ctx, readmeFile, treeLink)
 }
 
@@ -335,6 +337,7 @@ func renderReadmeFile(ctx *context.Context, readmeFile *namedBlob, readmeTreelin
 	}
 }
 
+// 渲染文件的内容
 func renderFile(ctx *context.Context, entry *git.TreeEntry, treeLink, rawLink string) {
 	ctx.Data["IsViewFile"] = true
 	ctx.Data["HideRepoInfo"] = true
@@ -700,6 +703,8 @@ func checkCitationFile(ctx *context.Context, entry *git.TreeEntry) {
 }
 
 // Home render repository home page
+// 渲染仓库的页面
+// git ls-tree/ git cat-file
 func Home(ctx *context.Context) {
 	if setting.EnableFeed {
 		isFeed, _, showFeedType := feed.GetFeedType(ctx.Params(":reponame"), ctx.Req)
@@ -751,6 +756,7 @@ func LastCommit(ctx *context.Context) {
 	ctx.HTML(http.StatusOK, tplRepoViewList)
 }
 
+// 渲染目录上的文件
 func renderDirectoryFiles(ctx *context.Context, timeout time.Duration) git.Entries {
 	tree, err := ctx.Repo.Commit.SubTree(ctx.Repo.TreePath)
 	if err != nil {
@@ -772,6 +778,7 @@ func renderDirectoryFiles(ctx *context.Context, timeout time.Duration) git.Entri
 		return nil
 	}
 
+	// 获取树上所有的项
 	allEntries, err := tree.ListEntries()
 	if err != nil {
 		ctx.ServerError("ListEntries", err)
@@ -800,6 +807,7 @@ func renderDirectoryFiles(ctx *context.Context, timeout time.Duration) git.Entri
 	}
 
 	var latestCommit *git.Commit
+	// 每个 tree entry 和其 commit info 填到模板里面，latestCommit 是 ctx.Repo.TreePath 对应的最后的 commit
 	ctx.Data["Files"], latestCommit, err = entries.GetCommitsInfo(commitInfoCtx, ctx.Repo.Commit, ctx.Repo.TreePath)
 	if err != nil {
 		ctx.ServerError("GetCommitsInfo", err)
@@ -844,6 +852,7 @@ func renderDirectoryFiles(ctx *context.Context, timeout time.Duration) git.Entri
 	return allEntries
 }
 
+// 渲染仓库语言
 func renderLanguageStats(ctx *context.Context) {
 	langs, err := repo_model.GetTopLanguageStats(ctx.Repo.Repository, 5)
 	if err != nil {
@@ -854,6 +863,7 @@ func renderLanguageStats(ctx *context.Context) {
 	ctx.Data["LanguageStats"] = langs
 }
 
+// 从数据库查找 REPO 对应的 TOPIC
 func renderRepoTopics(ctx *context.Context) {
 	topics, _, err := repo_model.FindTopics(&repo_model.FindTopicOptions{
 		RepoID: ctx.Repo.Repository.ID,
@@ -865,6 +875,7 @@ func renderRepoTopics(ctx *context.Context) {
 	ctx.Data["Topics"] = topics
 }
 
+// 渲染代码
 func renderCode(ctx *context.Context) {
 	ctx.Data["PageIsViewCode"] = true
 
@@ -939,8 +950,10 @@ func renderCode(ctx *context.Context) {
 	}
 
 	if entry.IsDir() {
+		// 如果是目录则将会渲染目录内的文件
 		renderDirectory(ctx, treeLink)
 	} else {
+		// 如果是文件则渲染文件内容
 		renderFile(ctx, entry, treeLink, rawLink)
 	}
 	if ctx.Written() {

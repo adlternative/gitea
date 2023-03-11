@@ -139,6 +139,8 @@ func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption uti
 	viewType := ctx.FormString("type")
 	sortType := ctx.FormString("sort")
 	types := []string{"all", "your_repositories", "assigned", "created_by", "mentioned", "review_requested"}
+
+	// 按照类型过滤
 	if !util.SliceContainsString(types, viewType, true) {
 		viewType = "all"
 	}
@@ -166,6 +168,7 @@ func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption uti
 
 	repo := ctx.Repo.Repository
 	var labelIDs []int64
+	// 按照 issue 的标签过滤
 	selectLabels := ctx.FormString("labels")
 	if len(selectLabels) > 0 && selectLabels != "0" {
 		labelIDs, err = base.StringsToInt64s(strings.Split(selectLabels, ","))
@@ -174,7 +177,7 @@ func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption uti
 			return
 		}
 	}
-
+	// 关键字搜索
 	keyword := strings.Trim(ctx.FormString("q"), " ")
 	if bytes.Contains([]byte(keyword), []byte{0x00}) {
 		keyword = ""
@@ -195,6 +198,7 @@ func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption uti
 		}
 	}
 
+	// 获取这些 issue 的状态：开关
 	var issueStats *issues_model.IssueStats
 	if forceEmpty {
 		issueStats = &issues_model.IssueStats{}
@@ -234,6 +238,7 @@ func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption uti
 	} else {
 		total = int(issueStats.ClosedCount)
 	}
+	// 分页
 	pager := context.NewPagination(total, setting.UI.IssuePagingNum, page, 5)
 
 	var mileIDs []int64
@@ -245,6 +250,7 @@ func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption uti
 	if forceEmpty {
 		issues = []*issues_model.Issue{}
 	} else {
+		// 获取 iSSUE 数据
 		issues, err = issues_model.Issues(ctx, &issues_model.IssuesOptions{
 			ListOptions: db.ListOptions{
 				Page:     pager.Paginater.Current(),
@@ -270,6 +276,7 @@ func issues(ctx *context.Context, milestoneID, projectID int64, isPullOption uti
 	}
 
 	issueList := issues_model.IssueList(issues)
+	// REVIEW 人相关数据
 	approvalCounts, err := issueList.GetApprovalCounts(ctx)
 	if err != nil {
 		ctx.ServerError("ApprovalCounts", err)
@@ -483,6 +490,7 @@ func RetrieveRepoMilestonesAndAssignees(ctx *context.Context, repo *repo_model.R
 	handleTeamMentions(ctx)
 }
 
+// 查找 repo 相关的项目
 func retrieveProjects(ctx *context.Context, repo *repo_model.Repository) {
 	var err error
 	projects, _, err := project_model.FindProjects(ctx, project_model.SearchOptions{

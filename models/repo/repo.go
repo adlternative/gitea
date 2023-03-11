@@ -644,6 +644,8 @@ func GetRepositoryByOwnerAndName(ctx context.Context, ownerName, repoName string
 }
 
 // GetRepositoryByName returns the repository by given name under user if exists.
+//
+//	根据 name 和 ownerID 去查找仓库
 func GetRepositoryByName(ownerID int64, name string) (*Repository, error) {
 	repo := &Repository{
 		OwnerID:   ownerID,
@@ -659,6 +661,8 @@ func GetRepositoryByName(ownerID int64, name string) (*Repository, error) {
 }
 
 // GetRepositoryByID returns the repository by given id if exists.
+//
+//	根据 id 去查找仓库
 func GetRepositoryByID(ctx context.Context, id int64) (*Repository, error) {
 	repo := new(Repository)
 	has, err := db.GetEngine(ctx).ID(id).Get(repo)
@@ -671,6 +675,8 @@ func GetRepositoryByID(ctx context.Context, id int64) (*Repository, error) {
 }
 
 // GetRepositoriesMapByIDs returns the repositories by given id slice.
+//
+//	根据 多个 id 去查找仓库
 func GetRepositoriesMapByIDs(ids []int64) (map[int64]*Repository, error) {
 	repos := make(map[int64]*Repository, len(ids))
 	return repos, db.GetEngine(db.DefaultContext).In("id", ids).Find(&repos)

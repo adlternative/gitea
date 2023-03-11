@@ -1031,6 +1031,7 @@ func RegisterRoutes(m *web.Route) {
 		})
 	}, reqSignIn, context.RepoAssignment, context.UnitTypes(), reqRepoAdmin, context.RepoRef())
 
+	// star watch 等事件在这里
 	m.Post("/{username}/{reponame}/action/{action}", reqSignIn, context.RepoAssignment, context.UnitTypes(), repo.Action)
 
 	// Grouping for those endpoints not requiring authentication
@@ -1232,6 +1233,7 @@ func RegisterRoutes(m *web.Route) {
 
 	m.Group("/{username}/{reponame}", func() {
 		m.Group("", func() {
+			// PR 和 issues 列表都是在这
 			m.Get("/{type:issues|pulls}", repo.Issues)
 			m.Get("/{type:issues|pulls}/{index}", repo.ViewIssue)
 			m.Group("/{type:issues|pulls}/{index}/content-history", func() {
@@ -1415,14 +1417,20 @@ func RegisterRoutes(m *web.Route) {
 		}, repo.MustBeNotEmpty, reqRepoCodeReader)
 
 		m.Group("", func() {
+			// 提交图
 			m.Get("/graph", repo.Graph)
+			// 提交页面
 			m.Get("/commit/{sha:([a-f0-9]{7,40})$}", repo.SetEditorconfigIfExists, repo.SetDiffViewStyle, repo.SetWhitespaceBehavior, repo.Diff)
 			m.Get("/cherry-pick/{sha:([a-f0-9]{7,40})$}", repo.SetEditorconfigIfExists, repo.CherryPick)
 		}, repo.MustBeNotEmpty, context.RepoRef(), reqRepoCodeReader)
 
+		// 主要的源码树页面
 		m.Group("/src", func() {
+			// 分支页面
 			m.Get("/branch/*", context.RepoRefByType(context.RepoRefBranch), repo.Home)
+			// 标签页面
 			m.Get("/tag/*", context.RepoRefByType(context.RepoRefTag), repo.Home)
+			// 标签页面
 			m.Get("/commit/*", context.RepoRefByType(context.RepoRefCommit), repo.Home)
 			// "/*" route is deprecated, and kept for backward compatibility
 			m.Get("/*", context.RepoRefByType(context.RepoRefLegacy), repo.Home)
@@ -1437,14 +1445,19 @@ func RegisterRoutes(m *web.Route) {
 
 	m.Post("/{username}/{reponame}/lastcommit/*", ignSignInAndCsrf, context.RepoAssignment, context.UnitTypes(), context.RepoRefByType(context.RepoRefCommit), reqRepoCodeReader, repo.LastCommit)
 
+	// 仓库行为
 	m.Group("/{username}/{reponame}", func() {
+		// 查看所有 STAR 了仓库的人
 		m.Get("/stars", repo.Stars)
+		// 查看所有 WATCH 了仓库的人
 		m.Get("/watchers", repo.Watchers)
+		// 代码索引相关，暂时先不看
 		m.Get("/search", reqRepoCodeReader, repo.Search)
 	}, ignSignIn, context.RepoAssignment, context.RepoRef(), context.UnitTypes())
 
 	m.Group("/{username}", func() {
 		m.Group("/{reponame}", func() {
+			// 主页
 			m.Get("", repo.SetEditorconfigIfExists, repo.Home)
 		}, ignSignIn, context.RepoAssignment, context.RepoRef(), context.UnitTypes())
 
@@ -1467,9 +1480,12 @@ func RegisterRoutes(m *web.Route) {
 			}, ignSignInAndCsrf, lfsServerEnabled)
 
 			m.Group("", func() {
+				// 执行对应的命令
 				m.PostOptions("/git-upload-pack", repo.ServiceUploadPack)
 				m.PostOptions("/git-receive-pack", repo.ServiceReceivePack)
+				// 请求服务器的引用列表
 				m.GetOptions("/info/refs", repo.GetInfoRefs)
+				// 直接返回文件
 				m.GetOptions("/HEAD", repo.GetTextFile("HEAD"))
 				m.GetOptions("/objects/info/alternates", repo.GetTextFile("objects/info/alternates"))
 				m.GetOptions("/objects/info/http-alternates", repo.GetTextFile("objects/info/http-alternates"))
