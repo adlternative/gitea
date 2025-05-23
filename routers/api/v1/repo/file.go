@@ -815,3 +815,88 @@ func GetContentsList(ctx *context.APIContext) {
 	// same as GetContents(), this function is here because swagger fails if path is empty in GetContents() interface
 	GetContents(ctx)
 }
+
+// GetFileBlame returns the git blame of a file
+func GetFileBlame(ctx *context.APIContext) {
+	// swagger:operation GET /repos/{owner}/{repo}/blame/{filepath} repository repoGetFileBlame
+	// ---
+	// summary: Gets the git blame of a file
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: owner
+	//   in: path
+	//   description: owner of the repo
+	//   type: string
+	//   required: true
+	// - name: repo
+	//   in: path
+	//   description: name of the repo
+	//   type: string
+	//   required: true
+	// - name: filepath
+	//   in: path
+	//   description: path of the file to blame
+	//   type: string
+	//   required: true
+	// - name: ref
+	//   in: query
+	//   description: "The name of the commit/branch/tag. Default the repository’s default branch (usually master)"
+	//   type: string
+	//   required: false
+	// responses:
+	//   "200":
+	//     description: "FileBlameResponse"
+	//   "404":
+	//     "$ref": "#/responses/notFound"
+	//   "400":
+	//     "$ref": "#/responses/error"
+	filePath := ctx.Params("*")
+	if filePath == "" {
+		ctx.Error(http.StatusBadRequest, "filepath missing", "filepath is missing")
+		return
+	}
+
+	ref := ctx.FormTrim("ref")
+	if ref == "" {
+		ref = ctx.Repo.Repository.DefaultBranch
+	}
+
+	commit, err := ctx.Repo.GitRepo.GetCommit(ref)
+	if err != nil {
+		ctx.NotFoundOrServerError("GetCommit", git.IsErrNotExist, err)
+		return
+	}
+
+	blame, err := git.GetBlame(ctx.Repo.GitRepo, commit, filePath)
+	if err != nil {
+		if git.IsErrNotExist(err) {
+			ctx.NotFound("GetBlame", err)
+		} else {
+			ctx.Error(http.StatusInternalServerError, "GetBlame", err)
+		}
+		return
+	}
+
+	// Format the response
+	type BlamePartResponse struct {
+		CommitID string   `json:"commit_id"`
+		Author   string   `json:"author"`
+		Email    string   `json:"email"`
+		Date     string   `json:"date"`
+		Lines    []string `json:"lines"`
+	}
+
+	response := make([]*BlamePartResponse, len(blame.Parts))
+	for i, part := range blame.Parts {
+		response[i] = &BlamePartResponse{
+			CommitID: part.Commit.ID.String(),
+			Author:   part.Commit.Author.Name,
+			Email:    part.Commit.Author.Email,
+			Date:     part.Commit.Author.When.Format(time.RFC3339),
+			Lines:    part.Lines,
+		}
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}
